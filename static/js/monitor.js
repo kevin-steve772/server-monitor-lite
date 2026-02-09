@@ -51,370 +51,376 @@ class Monitor {
             { p: 100, text: '准备就绪!' }
         ]
         
+        this.dom = {
+            loadingBar: document.getElementById('loading-bar'),
+            loadingStatus: document.getElementById('loading-status'),
+            loadingScreen: document.getElementById('loading-screen'),
+            mainContainer: document.getElementById('main-container'),
+            connectionStatus: document.getElementById('connection-status'),
+            statusDot: document.querySelector('.status-dot'),
+            hostname: document.getElementById('hostname'),
+            uptime: document.getElementById('uptime'),
+            cpuPercent: document.getElementById('cpu-percent'),
+            cpuCores: document.getElementById('cpu-cores'),
+            cpuFreq: document.getElementById('cpu-freq'),
+            cpuLoad: document.getElementById('cpu-load'),
+            cpuRing: document.querySelector('.cpu-ring'),
+            perCpuBars: document.getElementById('per-cpu-bars'),
+            memPercent: document.getElementById('memory-percent'),
+            memTotal: document.getElementById('memory-total'),
+            memUsed: document.getElementById('memory-used'),
+            memFree: document.getElementById('memory-free'),
+            memRing: document.querySelector('.memory-ring'),
+            memBarUsed: document.getElementById('memory-bar-used'),
+            memBarSwap: document.getElementById('memory-bar-swap'),
+            diskList: document.getElementById('disk-list'),
+            netUpload: document.getElementById('net-upload'),
+            netDownload: document.getElementById('net-download'),
+            netTotalUpload: document.getElementById('net-total-upload'),
+            netTotalDownload: document.getElementById('net-total-download'),
+            netConnections: document.getElementById('net-connections'),
+            cpuChart: document.getElementById('cpu-chart'),
+            memChart: document.getElementById('memory-chart')
+        };
+        
         this.init()
     }
 
     init() {
         // 初始化图表
-        this.initCharts()
+        this.initCharts();
         
         // 开始加载动画
-        this.startLoading()
+        this.startLoading();
         
         // 连接websocket
-        this.connect()
+        this.connect();
         
         // 绑定事件
-        this.bindEvents()
+        this.bindEvents();
     }
 
     // 加载动画
     startLoading() {
-        const bar = document.getElementById('loading-bar')
-        const status = document.getElementById('loading-status')
-        
-        let i = 0
+        let i = 0;
         const next = () => {
             if (i < this.steps.length) {
-                const step = this.steps[i]
-                bar.style.width = step.p + '%'
-                status.textContent = step.text
-                i++
-                
-                // 随机延迟
-                setTimeout(next, 300 + Math.random() * 400)
+                const step = this.steps[i];
+                this.dom.loadingBar.style.width = step.p + '%';
+                this.dom.loadingStatus.textContent = step.text;
+                i++;
+                setTimeout(next, 300 + Math.random() * 400);
             }
-        }
-        
-        next()
+        };
+        next();
     }
 
     hideLoading() {
-        const screen = document.getElementById('loading-screen')
-        const container = document.getElementById('main-container')
-        
-        document.getElementById('loading-bar').style.width = '100%'
-        document.getElementById('loading-status').textContent = '准备就绪!'
+        this.dom.loadingBar.style.width = '100%';
+        this.dom.loadingStatus.textContent = '准备就绪!';
         
         setTimeout(() => {
-            screen.classList.add('hidden')
-            container.style.visibility = 'visible'
-            container.style.opacity = '1'
-            container.style.transition = 'opacity 0.8s ease'
-        }, 500)
+            this.dom.loadingScreen.classList.add('hidden');
+            this.dom.mainContainer.style.visibility = 'visible';
+            this.dom.mainContainer.style.opacity = '1';
+        }, 500);
     }
 
-    // 自定义动画
-    animate(element, props, duration = 500, easing = 'easeOut') {
-        const start = performance.now()
-        const startVals = {}
-        
-        for (const prop in props) {
-            const computed = window.getComputedStyle(element)
-            startVals[prop] = parseFloat(computed[prop]) || 0
-        }
-        
-        const frame = (now) => {
-            const elapsed = now - start
-            const progress = Math.min(elapsed / duration, 1)
-            
-            let eased
-            if (easing === 'easeOut') {
-                eased = 1 - Math.pow(1 - progress, 3)
-            } else if (easing === 'easeInOut') {
-                eased = progress < 0.5 
-                    ? 4 * progress * progress * progress 
-                    : 1 - Math.pow(-2 * progress + 2, 3) / 2
-            } else {
-                eased = progress
-            }
-            
-            for (const prop in props) {
-                const target = props[prop]
-                const current = startVals[prop] + (target - startVals[prop]) * eased
-                
-                if (prop === 'opacity') {
-                    element.style.opacity = current
-                } else {
-                    element.style[prop] = current + 'px'
-                }
-            }
-            
-            if (progress < 1) {
-                requestAnimationFrame(frame)
-            }
-        }
-        
-        requestAnimationFrame(frame)
-    }
-
-    // 数字动画
-    animateNumber(el, target, duration = 500) {
-        const start = parseFloat(el.textContent) || 0
-        const startTime = performance.now()
-        
-        const update = (now) => {
-            const elapsed = now - startTime
-            const progress = Math.min(elapsed / duration, 1)
-            const easeOut = 1 - Math.pow(1 - progress, 4)
-            const current = start + (target - start) * easeOut
-            
-            el.textContent = current.toFixed(1)
-            
-            if (progress < 1) {
-                requestAnimationFrame(update)
-            }
-        }
-        
-        requestAnimationFrame(update)
-    }
-
-    // 初始化图表
-    initCharts() {
-        this.drawGrid('cpu-grid')
-        this.drawGrid('mem-grid')
-    }
-
-    drawGrid(id) {
-        const grid = document.getElementById(id)
-        if (!grid) return
-        
-        for (let i = 0; i <= 5; i++) {
-            const y = (i / 5) * 200
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line')
-            line.setAttribute('x1', '0')
-            line.setAttribute('y1', y.toString())
-            line.setAttribute('x2', '400')
-            line.setAttribute('y2', y.toString())
-            grid.appendChild(line)
-        }
-    }
-
-    // 更新图表
-    updateChart(history, lineId, areaId) {
-        const line = document.getElementById(lineId)
-        const area = document.getElementById(areaId)
-        if (!line || !area) return
-        
-        const width = 400
-        const height = 200
-        
-        // 生成平滑曲线
-        const path = this.smoothPath(history, width, height)
-        
-        line.setAttribute('d', path.line)
-        area.setAttribute('d', path.area)
-    }
-
-    smoothPath(data, width, height) {
-        if (data.length < 2) return { line: '', area: '' }
-        
-        const stepX = width / (data.length - 1)
-        
-        const points = data.map((val, i) => ({
-            x: i * stepX,
-            y: height - (val / 100) * height
-        }))
-        
-        let linePath = `M ${points[0].x},${points[0].y}`
-        
-        for (let i = 0; i < points.length - 1; i++) {
-            const curr = points[i]
-            const next = points[i + 1]
-            const cp1x = curr.x + (next.x - curr.x) * 0.3
-            const cp1y = curr.y
-            const cp2x = next.x - (next.x - curr.x) * 0.3
-            const cp2y = next.y
-            
-            linePath += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`
-        }
-        
-        const areaPath = linePath + ` L ${width},${height} L 0,${height} Z`
-        
-        return { line: linePath, area: areaPath }
-    }
+    // ... (animate and animateNumber can be removed if we switch to CSS animations)
 
     // WebSocket连接
     connect() {
-        const url = `ws://${window.location.host}/ws`
-        this.ws = new WebSocket(url)
+        const url = `ws://${window.location.host}/ws`;
+        this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
-            console.log('connected!')
-            this.isConnected = true
-            this.updateStatus(true)
-            this.hideLoading()
-        }
+            console.log('connected!');
+            this.isConnected = true;
+            this.updateStatus(true);
+            this.hideLoading();
+        };
 
         this.ws.onmessage = (e) => {
-            const data = JSON.parse(e.data)
-            this.updateUI(data)
-        }
+            const data = JSON.parse(e.data);
+            // Batch DOM updates
+            requestAnimationFrame(() => {
+                this.updateUI(data);
+            });
+        };
 
         this.ws.onclose = () => {
-            console.log('disconnected')
-            this.isConnected = false
-            this.updateStatus(false)
-            setTimeout(() => this.connect(), this.reconnectInterval)
-        }
+            console.log('disconnected');
+            this.isConnected = false;
+            this.updateStatus(false);
+            setTimeout(() => this.connect(), this.reconnectInterval);
+        };
 
         this.ws.onerror = (err) => {
-            console.error('ws error:', err)
-            this.isConnected = false
-            this.updateStatus(false)
-        }
+            console.error('ws error:', err);
+            this.isConnected = false;
+            this.updateStatus(false);
+        };
     }
 
     updateStatus(connected) {
-        const status = document.getElementById('connection-status')
-        const dot = document.querySelector('.status-dot')
-        
         if (connected) {
-            status.textContent = '已连接'
-            dot.classList.add('connected')
+            this.dom.connectionStatus.textContent = '已连接';
+            this.dom.statusDot.classList.add('connected');
         } else {
-            status.textContent = '已断开'
-            dot.classList.remove('connected')
+            this.dom.connectionStatus.textContent = '已断开';
+            this.dom.statusDot.classList.remove('connected');
         }
     }
 
     // 更新UI
     updateUI(data) {
-        this.updateSystem(data.system)
-        this.updateCPU(data.cpu)
-        this.updateMemory(data.memory)
-        this.updateDisk(data.disk)
-        this.updateNetwork(data.network)
-        this.updateCharts(data.cpu.percent, data.memory.percent)
+        if (data.system) this.updateSystem(data.system);
+        if (data.cpu) this.updateCPU(data.cpu);
+        if (data.memory) this.updateMemory(data.memory);
+        if (data.disk) this.updateDisk(data.disk);
+        if (data.network) this.updateNetwork(data.network);
+        if (data.cpu && data.memory) this.updateCharts(data.cpu.percent, data.memory.percent);
     }
 
     updateSystem(sys) {
-        document.getElementById('hostname').textContent = sys.hostname
-        document.getElementById('uptime').textContent = this.formatUptime(sys.uptime)
+        this.dom.hostname.textContent = sys.hostname;
+        this.dom.uptime.textContent = this.formatUptime(sys.uptime);
     }
 
     updateCPU(cpu) {
-        const percentEl = document.getElementById('cpu-percent')
-        const coresEl = document.getElementById('cpu-cores')
-        const freqEl = document.getElementById('cpu-freq')
-        const loadEl = document.getElementById('cpu-load')
-        const ring = document.querySelector('.cpu-ring')
+        this.dom.cpuPercent.textContent = cpu.percent.toFixed(1);
+        this.dom.cpuCores.textContent = cpu.count + ' 核心';
+        this.dom.cpuFreq.textContent = cpu.freq ? cpu.freq.toFixed(0) + ' MHz' : '-- MHz';
+        this.dom.cpuLoad.textContent = cpu.load_avg ? cpu.load_avg.map(l => l.toFixed(2)).join(' / ') : '--';
 
-        this.animateNumber(percentEl, cpu.percent)
-        
-        coresEl.textContent = cpu.count + ' 核心'
-        freqEl.textContent = cpu.freq ? cpu.freq.toFixed(0) + ' MHz' : '-- MHz'
-        loadEl.textContent = cpu.load_avg ? cpu.load_avg.map(l => l.toFixed(2)).join(' / ') : '--'
+        const c = 339.292;
+        const offset = c - (cpu.percent / 100) * c;
+        this.dom.cpuRing.style.strokeDashoffset = offset;
 
-        // 进度环
-        const c = 339.292
-        const offset = c - (cpu.percent / 100) * c
-        ring.style.strokeDashoffset = offset
-
-        this.updateCPUBars(cpu.per_cpu)
+        this.updateCPUBars(cpu.per_cpu);
     }
 
     updateCPUBars(perCpu) {
-        const container = document.getElementById('per-cpu-bars')
-        
+        const container = this.dom.perCpuBars;
         if (container.children.length !== perCpu.length) {
-            container.innerHTML = ''
-            perCpu.forEach((_, i) => {
-                const bar = document.createElement('div')
-                bar.className = 'cpu-bar'
-                bar.innerHTML = '<div class="cpu-bar-fill"></div>'
-                container.appendChild(bar)
-                
-                bar.style.transform = 'scaleY(0)'
-                bar.style.transformOrigin = 'bottom'
-                setTimeout(() => {
-                    bar.style.transition = 'transform 0.5s ease'
-                    bar.style.transform = 'scaleY(1)'
-                }, i * 50)
-            })
+            container.innerHTML = '';
+            perCpu.forEach(() => {
+                const bar = document.createElement('div');
+                bar.className = 'cpu-bar';
+                bar.innerHTML = '<div class="cpu-bar-fill"></div>';
+                container.appendChild(bar);
+            });
         }
 
         perCpu.forEach((usage, i) => {
-            const fill = container.children[i].querySelector('.cpu-bar-fill')
-            fill.style.height = usage + '%'
+            const fill = container.children[i].querySelector('.cpu-bar-fill');
+            fill.style.height = usage + '%';
             
-            fill.classList.remove('high', 'medium')
-            if (usage > 80) fill.classList.add('high')
-            else if (usage > 50) fill.classList.add('medium')
-        })
+            fill.classList.toggle('high', usage > 80);
+            fill.classList.toggle('medium', usage > 50 && usage <= 80);
+        });
     }
 
     updateMemory(mem) {
-        const percentEl = document.getElementById('memory-percent')
-        const totalEl = document.getElementById('memory-total')
-        const usedEl = document.getElementById('memory-used')
-        const freeEl = document.getElementById('memory-free')
-        const ring = document.querySelector('.memory-ring')
-        const barUsed = document.getElementById('memory-bar-used')
-        const barSwap = document.getElementById('memory-bar-swap')
+        this.dom.memPercent.textContent = mem.percent.toFixed(1);
+        this.dom.memTotal.textContent = this.formatBytes(mem.total);
+        this.dom.memUsed.textContent = this.formatBytes(mem.used);
+        this.dom.memFree.textContent = this.formatBytes(mem.available);
 
-        this.animateNumber(percentEl, mem.percent)
+        const c = 339.292;
+        this.dom.memRing.style.strokeDashoffset = c - (mem.percent / 100) * c;
 
-        totalEl.textContent = this.formatBytes(mem.total)
-        usedEl.textContent = this.formatBytes(mem.used)
-        freeEl.textContent = this.formatBytes(mem.available)
-
-        const c = 339.292
-        ring.style.strokeDashoffset = c - (mem.percent / 100) * c
-
-        const usedPercent = (mem.used / mem.total) * 100
-        const swapPercent = mem.swap_total > 0 ? (mem.swap_used / mem.swap_total) * 100 : 0
+        const usedPercent = (mem.used / mem.total) * 100;
+        const swapPercent = mem.swap_total > 0 ? (mem.swap_used / mem.swap_total) * 100 : 0;
         
-        barUsed.style.width = usedPercent + '%'
-        barSwap.style.width = swapPercent + '%'
+        this.dom.memBarUsed.style.width = usedPercent + '%';
+        this.dom.memBarSwap.style.width = swapPercent + '%';
     }
 
     updateDisk(disks) {
-        const container = document.getElementById('disk-list')
-        container.innerHTML = ''
+        const container = this.dom.diskList;
+        // Use a document fragment to reduce reflows
+        const fragment = document.createDocumentFragment();
 
-        disks.forEach((disk, i) => {
-            const item = document.createElement('div')
-            item.className = 'disk-item'
-            item.style.animationDelay = (i * 0.1) + 's'
+        disks.forEach((disk) => {
+            const item = document.createElement('div');
+            item.className = 'disk-item';
             item.innerHTML = `
                 <div class="disk-info">
                     <span class="disk-device">${disk.device}</span>
                     <span class="disk-size">${this.formatBytes(disk.used)} / ${this.formatBytes(disk.total)}</span>
                 </div>
                 <div class="disk-progress">
-                    <div class="disk-progress-fill" style="width: 0%"></div>
+                    <div class="disk-progress-fill" style="width: ${disk.percent}%"></div>
                 </div>
-            `
-            container.appendChild(item)
+            `;
+            fragment.appendChild(item);
+        });
 
-            setTimeout(() => {
-                item.querySelector('.disk-progress-fill').style.width = disk.percent + '%'
-            }, 100 + i * 100)
-        })
+        container.innerHTML = '';
+        container.appendChild(fragment);
     }
 
     updateNetwork(net) {
-        document.getElementById('net-upload').textContent = this.formatSpeed(net.upload_speed)
-        document.getElementById('net-download').textContent = this.formatSpeed(net.download_speed)
-        document.getElementById('net-total-upload').textContent = this.formatBytes(net.bytes_sent)
-        document.getElementById('net-total-download').textContent = this.formatBytes(net.bytes_recv)
-        document.getElementById('net-connections').textContent = net.connections + ' 连接'
+        this.dom.netUpload.textContent = this.formatSpeed(net.upload_speed);
+        this.dom.netDownload.textContent = this.formatSpeed(net.download_speed);
+        this.dom.netTotalUpload.textContent = this.formatBytes(net.bytes_sent);
+        this.dom.netTotalDownload.textContent = this.formatBytes(net.bytes_recv);
+        this.dom.netConnections.textContent = net.connections + ' 连接';
     }
 
     updateCharts(cpuPercent, memPercent) {
-        this.cpuHistory.shift()
-        this.cpuHistory.push(cpuPercent)
-        this.memoryHistory.shift()
-        this.memoryHistory.push(memPercent)
+        this.cpuHistory.shift();
+        this.cpuHistory.push(cpuPercent);
+        this.memoryHistory.shift();
+        this.memoryHistory.push(memPercent);
 
-        // 保存到localStorage
-        setStorage('cpuHistory', this.cpuHistory)
-        setStorage('memHistory', this.memoryHistory)
+        setStorage('cpuHistory', this.cpuHistory);
+        setStorage('memHistory', this.memoryHistory);
 
-        this.updateChart(this.cpuHistory, 'cpu-line', 'cpu-area')
-        this.updateChart(this.memoryHistory, 'mem-line', 'mem-area')
+        this.drawChart(this.dom.cpuChart, this.cpuHistory, '#00d4ff');
+        this.drawChart(this.dom.memChart, this.memoryHistory, '#ff6b6b');
     }
+
+    initCharts() {
+        this.resizeCanvas(this.dom.cpuChart);
+        this.resizeCanvas(this.dom.memChart);
+        
+        window.addEventListener('resize', () => {
+            this.resizeCanvas(this.dom.cpuChart);
+            this.resizeCanvas(this.dom.memChart);
+            this.drawChart(this.dom.cpuChart, this.cpuHistory, '#00d4ff');
+            this.drawChart(this.dom.memChart, this.memoryHistory, '#ff6b6b');
+        });
+
+        this.drawChart(this.dom.cpuChart, this.cpuHistory, '#00d4ff');
+        this.drawChart(this.dom.memChart, this.memoryHistory, '#ff6b6b');
+    }
+
+    resizeCanvas(canvas) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+    }
+
+    drawChart(canvas, data, color) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width / (window.devicePixelRatio || 1);
+        const height = canvas.height / (window.devicePixelRatio || 1);
+        
+        ctx.clearRect(0, 0, width, height);
+        
+        // 绘制网格
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        
+        // 垂直网格线
+        const xStep = width / (data.length - 1);
+        for(let i = 0; i < data.length; i += 10) {
+            const x = i * xStep;
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+        }
+        
+        // 水平网格线
+        for(let i = 0; i <= 4; i++) {
+            const y = (height / 4) * i;
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+        }
+        ctx.stroke();
+
+        if (data.length < 2) return;
+
+        // 创建渐变
+        const gradient = ctx.createLinearGradient(0, 0, 0, height);
+        
+        let startColor, endColor;
+        
+        if (color.startsWith('#')) {
+            startColor = this.hexToRgba(color, 0.3);
+            endColor = this.hexToRgba(color, 0);
+        } else {
+            // 假设是 rgb/rgba，简单的字符串替换尝试
+            // 但为了安全，我们这里只处理十六进制，因为我们只用了十六进制
+            startColor = color; 
+            endColor = color;
+        }
+
+        gradient.addColorStop(0, startColor);
+        gradient.addColorStop(1, endColor);
+
+        // 绘制区域
+        ctx.beginPath();
+        ctx.moveTo(0, height);
+        
+        let i = 0;
+        // 移动到第一个点
+        let x = 0;
+        let y = height - (data[0] / 100) * height;
+        ctx.lineTo(x, y);
+
+        for (i = 1; i < data.length; i++) {
+            x = i * xStep;
+            y = height - (data[i] / 100) * height;
+            
+            // 简单的贝塞尔曲线平滑
+            const prevX = (i - 1) * xStep;
+            const prevY = height - (data[i - 1] / 100) * height;
+            const cpX = (prevX + x) / 2;
+            
+            ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+        }
+        
+        ctx.lineTo(width, height);
+        ctx.closePath();
+        
+        ctx.fillStyle = gradient;
+        // 如果是十六进制颜色，我们需要手动处理渐变色，这里简化处理，直接用固定透明度
+        if (color.startsWith('#')) {
+             const g = ctx.createLinearGradient(0, 0, 0, height);
+             g.addColorStop(0, this.hexToRgba(color, 0.3));
+             g.addColorStop(1, this.hexToRgba(color, 0));
+             ctx.fillStyle = g;
+        }
+        ctx.fill();
+
+        // 绘制线条
+        ctx.beginPath();
+        x = 0;
+        y = height - (data[0] / 100) * height;
+        ctx.moveTo(x, y);
+
+        for (i = 1; i < data.length; i++) {
+            x = i * xStep;
+            y = height - (data[i] / 100) * height;
+            const prevX = (i - 1) * xStep;
+            const prevY = height - (data[i - 1] / 100) * height;
+            const cpX = (prevX + x) / 2;
+            ctx.bezierCurveTo(cpX, prevY, cpX, y, x, y);
+        }
+        
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+
+    hexToRgba(hex, alpha) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
 
     // 工具函数
     formatBytes(bytes) {

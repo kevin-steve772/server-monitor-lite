@@ -7,11 +7,11 @@
 }
 
 :root {
-    --bg: #0a0a0f;
+    --bg: #08080c;
     --bg2: #12121a;
-    --card: rgba(20, 20, 30, 0.8);
-    --text: #ffffff;
-    --text2: #a0a0b0;
+    --card: rgba(22, 22, 32, 0.8);
+    --text: #f0f0f0;
+    --text2: #b0b0c0;
     --cpu: #00d4ff;
     --mem: #ff6b6b;
     --disk: #4ecdc4;
@@ -19,7 +19,7 @@
     --ok: #2ecc71;
     --warn: #f39c12;
     --err: #e74c3c;
-    --border: rgba(255, 255, 255, 0.1);
+    --border: rgba(255, 255, 255, 0.12);
 }
 
 body {
@@ -27,6 +27,7 @@ body {
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    letter-spacing: 0.5px;
 }
 
 /* 加载动画 */
@@ -153,7 +154,7 @@ body {
 
 @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-30px); }
-    to { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0) translateZ(0); }
 }
 
 .logo {
@@ -231,12 +232,13 @@ body {
 .monitor-card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 25px;
     backdrop-filter: blur(10px);
     opacity: 0;
     transform: translateY(50px);
     animation: fadeInUp 0.8s forwards;
+    transform: translateZ(0);
 }
 
 .monitor-card:nth-child(1) { animation-delay: 0.4s; }
@@ -246,20 +248,20 @@ body {
 
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(50px); }
-    to { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: translateY(0) translateZ(0); }
 }
 
 .monitor-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-5px) translateZ(0);
     box-shadow: 0 0 30px rgba(0,212,255,0.3);
-    transition: all 0.3s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card-header {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .card-icon {
@@ -324,9 +326,10 @@ body {
 }
 
 .stat-value {
-    font-size: 3rem;
+    font-size: 2.8rem;
     font-weight: 700;
     font-family: 'Courier New', monospace;
+    text-shadow: 0 0 10px rgba(255,255,255,0.1);
 }
 
 .stat-unit {
@@ -356,7 +359,8 @@ body {
     stroke-linecap: round;
     stroke-dasharray: 339.292;
     stroke-dashoffset: 339.292;
-    transition: stroke-dashoffset 0.5s;
+    transition: stroke-dashoffset 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: translateZ(0);
 }
 
 .cpu-ring {
@@ -390,7 +394,7 @@ body {
 
 .detail-stat .value {
     font-size: 0.95rem;
-    font-weight: 600;
+    font-weight: 700;
     font-family: 'Courier New', monospace;
 }
 
@@ -417,7 +421,8 @@ body {
     width: 100%;
     background: linear-gradient(to top, var(--cpu), rgba(0,212,255,0.5));
     border-radius: 2px;
-    transition: height 0.3s, background 0.3s;
+    transition: height 0.3s ease-out, background 0.3s ease;
+    transform: translateZ(0);
 }
 
 .cpu-bar-fill.high {
@@ -444,13 +449,15 @@ body {
 .memory-bar-used {
     height: 100%;
     background: linear-gradient(90deg, var(--mem), rgba(255,107,107,0.7));
-    transition: width 0.5s;
+    transition: width 0.5s ease-out;
+    transform: translateZ(0);
 }
 
 .memory-bar-swap {
     height: 100%;
     background: linear-gradient(90deg, var(--warn), rgba(243,156,18,0.7));
-    transition: width 0.5s;
+    transition: width 0.5s ease-out;
+    transform: translateZ(0);
 }
 
 .memory-legend {
@@ -499,7 +506,7 @@ body {
 
 @keyframes fadeInLeft {
     from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
+    to { opacity: 1; transform: translateX(0) translateZ(0); }
 }
 
 .disk-info {
@@ -529,7 +536,8 @@ body {
     height: 100%;
     background: linear-gradient(90deg, var(--disk), rgba(78,205,196,0.7));
     border-radius: 3px;
-    transition: width 0.8s;
+    transition: width 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform: translateZ(0);
 }
 
 /* 网络 */
@@ -582,7 +590,7 @@ body {
 }
 
 .net-value {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     font-weight: 600;
     font-family: 'Courier New', monospace;
 }
@@ -666,11 +674,13 @@ body {
 }
 
 .chart-line {
-    transition: d 0.3s;
+    transition: d 0.3s linear;
+    transform: translateZ(0);
 }
 
 .chart-area {
-    transition: d 0.3s;
+    transition: d 0.3s linear;
+    transform: translateZ(0);
 }
 
 .chart-grid line {
