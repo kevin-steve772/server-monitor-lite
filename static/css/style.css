@@ -1,0 +1,699 @@
+/* 样式表 */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg: #0a0a0f;
+    --bg2: #12121a;
+    --card: rgba(20, 20, 30, 0.8);
+    --text: #ffffff;
+    --text2: #a0a0b0;
+    --cpu: #00d4ff;
+    --mem: #ff6b6b;
+    --disk: #4ecdc4;
+    --net: #ffe66d;
+    --ok: #2ecc71;
+    --warn: #f39c12;
+    --err: #e74c3c;
+    --border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* 加载动画 */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.8s, visibility 0.8s;
+}
+
+.loading-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.loading-icon {
+    width: 80px;
+    height: 80px;
+    color: var(--cpu);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.loading-text {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--cpu), var(--mem));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.loading-bar-container {
+    width: 300px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin: 30px auto;
+    overflow: hidden;
+}
+
+.loading-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--cpu), var(--mem));
+    transition: width 0.3s;
+}
+
+.loading-status {
+    font-size: 0.9rem;
+    color: var(--text2);
+}
+
+/* 背景 */
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.gradient-bg {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(255,107,107,0.1) 0%, transparent 50%);
+    animation: bgPulse 8s infinite;
+}
+
+@keyframes bgPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.grid-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: grid 20s linear infinite;
+}
+
+@keyframes grid {
+    0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+    100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
+}
+
+/* 容器 */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* 头部 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 0;
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeInDown 0.8s 0.2s forwards;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo svg {
+    width: 40px;
+    height: 40px;
+    color: var(--cpu);
+}
+
+.logo h1 {
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, var(--cpu), var(--mem));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.system-info {
+    display: flex;
+    gap: 25px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text2);
+    font-size: 0.9rem;
+}
+
+.info-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--cpu);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--err);
+    animation: blink 2s infinite;
+}
+
+.status-dot.connected {
+    background: var(--ok);
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* 卡片网格 */
+.monitor-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 1200px) {
+    .monitor-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .monitor-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 15px; }
+}
+
+.monitor-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(50px);
+    animation: fadeInUp 0.8s forwards;
+}
+
+.monitor-card:nth-child(1) { animation-delay: 0.4s; }
+.monitor-card:nth-child(2) { animation-delay: 0.55s; }
+.monitor-card:nth-child(3) { animation-delay: 0.7s; }
+.monitor-card:nth-child(4) { animation-delay: 0.85s; }
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(50px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.monitor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(0,212,255,0.3);
+    transition: all 0.3s;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.cpu-icon {
+    background: linear-gradient(135deg, rgba(0,212,255,0.2), rgba(0,212,255,0.05));
+    color: var(--cpu);
+    box-shadow: 0 0 20px rgba(0,212,255,0.3);
+}
+
+.memory-icon {
+    background: linear-gradient(135deg, rgba(255,107,107,0.2), rgba(255,107,107,0.05));
+    color: var(--mem);
+    box-shadow: 0 0 20px rgba(255,107,107,0.3);
+}
+
+.disk-icon {
+    background: linear-gradient(135deg, rgba(78,205,196,0.2), rgba(78,205,196,0.05));
+    color: var(--disk);
+    box-shadow: 0 0 20px rgba(78,205,196,0.3);
+}
+
+.network-icon {
+    background: linear-gradient(135deg, rgba(255,230,109,0.2), rgba(255,230,109,0.05));
+    color: var(--net);
+    box-shadow: 0 0 20px rgba(255,230,109,0.3);
+}
+
+.card-title h3 {
+    font-size: 1.2rem;
+    margin-bottom: 3px;
+}
+
+.card-title .subtitle {
+    font-size: 0.8rem;
+    color: var(--text2);
+}
+
+.card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.main-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.stat-value {
+    font-size: 3rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+
+.stat-unit {
+    font-size: 1.2rem;
+    color: var(--text2);
+}
+
+/* 进度环 */
+.progress-ring {
+    width: 100px;
+    height: 100px;
+}
+
+.progress-ring svg {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    fill: none;
+    stroke: rgba(255,255,255,0.1);
+    stroke-width: 8;
+}
+
+.progress-ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 339.292;
+    stroke-dashoffset: 339.292;
+    transition: stroke-dashoffset 0.5s;
+}
+
+.cpu-ring {
+    stroke: var(--cpu);
+    filter: drop-shadow(0 0 5px var(--cpu));
+}
+
+.memory-ring {
+    stroke: var(--mem);
+    filter: drop-shadow(0 0 5px var(--mem));
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.detail-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.detail-stat .label {
+    font-size: 0.75rem;
+    color: var(--text2);
+    text-transform: uppercase;
+}
+
+.detail-stat .value {
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+/* CPU核心条 */
+.per-cpu-bars {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8px, 1fr));
+    gap: 3px;
+    margin-top: 15px;
+    height: 30px;
+}
+
+.cpu-bar {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.cpu-bar-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: linear-gradient(to top, var(--cpu), rgba(0,212,255,0.5));
+    border-radius: 2px;
+    transition: height 0.3s, background 0.3s;
+}
+
+.cpu-bar-fill.high {
+    background: linear-gradient(to top, var(--err), rgba(231,76,60,0.5));
+}
+
+.cpu-bar-fill.medium {
+    background: linear-gradient(to top, var(--warn), rgba(243,156,18,0.5));
+}
+
+/* 内存条 */
+.memory-bar-container {
+    margin-top: 15px;
+}
+
+.memory-bar {
+    height: 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+}
+
+.memory-bar-used {
+    height: 100%;
+    background: linear-gradient(90deg, var(--mem), rgba(255,107,107,0.7));
+    transition: width 0.5s;
+}
+
+.memory-bar-swap {
+    height: 100%;
+    background: linear-gradient(90deg, var(--warn), rgba(243,156,18,0.7));
+    transition: width 0.5s;
+}
+
+.memory-legend {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--text2);
+}
+
+.memory-legend span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+.legend-dot.used { background: var(--mem); }
+.legend-dot.swap { background: var(--warn); }
+.legend-dot.free { background: var(--text2); }
+
+/* 磁盘 */
+.disk-body {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.disk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.disk-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 12px;
+    opacity: 0;
+    animation: fadeInLeft 0.5s forwards;
+}
+
+@keyframes fadeInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.disk-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.disk-device {
+    font-weight: 600;
+    color: var(--disk);
+}
+
+.disk-size {
+    color: var(--text2);
+}
+
+.disk-progress {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.disk-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--disk), rgba(78,205,196,0.7));
+    border-radius: 3px;
+    transition: width 0.8s;
+}
+
+/* 网络 */
+.network-stats {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.net-stat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.net-stat.upload {
+    border-left: 3px solid var(--err);
+}
+
+.net-stat.download {
+    border-left: 3px solid var(--ok);
+}
+
+.net-stat svg {
+    width: 24px;
+    height: 24px;
+}
+
+.net-stat.upload svg {
+    color: var(--err);
+}
+
+.net-stat.download svg {
+    color: var(--ok);
+}
+
+.net-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.net-label {
+    font-size: 0.75rem;
+    color: var(--text2);
+    text-transform: uppercase;
+}
+
+.net-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.network-total {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 15px;
+    border-top: 1px solid var(--border);
+}
+
+.total-stat {
+    text-align: center;
+}
+
+.total-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text2);
+    margin-bottom: 5px;
+}
+
+.total-value {
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+/* 图表区域 */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 900px) {
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-container {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    opacity: 0;
+    transform: translateY(50px);
+    animation: fadeInUp 0.8s forwards;
+}
+
+.chart-container:nth-child(1) { animation-delay: 0.8s; }
+.chart-container:nth-child(2) { animation-delay: 0.95s; }
+
+.chart-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.chart-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.chart-header svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    color: var(--cpu);
+}
+
+.line-chart {
+    width: 100%;
+    height: 200px;
+    overflow: visible;
+}
+
+.chart-line {
+    transition: d 0.3s;
+}
+
+.chart-area {
+    transition: d 0.3s;
+}
+
+.chart-grid line {
+    stroke: rgba(255,255,255,0.05);
+    stroke-width: 1;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.3);
+}
