@@ -3,281 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Monitor - 服务器监控</title>
+    <title>Server Monitor Lite</title>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <!-- 加载动画 -->
-    <div class="loading-screen" id="loading-screen">
-        <div class="loading-container">
-            <svg class="loading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                <line x1="6" y1="18" x2="6.01" y2="18"></line>
-            </svg>
-            <div class="loading-text">Server Monitor</div>
-            <div class="loading-bar-container">
-                <div class="loading-bar" id="loading-bar"></div>
-            </div>
-            <div class="loading-status" id="loading-status">初始化系统...</div>
-        </div>
-    </div>
-
-    <div class="background">
-        <div class="gradient-bg"></div>
-        <div class="grid-overlay"></div>
-    </div>
-
-    <div class="container" id="main-container" style="opacity: 0; visibility: hidden;">
-        <!-- 头部 -->
+    <div class="container">
         <header class="header">
-            <div class="logo">
-                <svg class="icon-server" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                    <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                    <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                </svg>
-                <h1>Server Monitor</h1>
-            </div>
+            <div class="logo">Server Monitor Lite</div>
             <div class="system-info">
-                <div class="info-item">
-                    <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                        <line x1="8" y1="21" x2="16" y2="21"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                    </svg>
-                    <span id="hostname">--</span>
-                </div>
-                <div class="info-item">
-                    <svg class="icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    <span id="uptime">--</span>
-                </div>
-                <div class="info-item">
-                    <span class="status-dot"></span>
-                    <span id="connection-status">连接中...</span>
-                </div>
+                <span id="hostname">--</span>
+                <span>·</span>
+                <span id="uptime">--</span>
+                <span>·</span>
+                <span id="connection-status">连接中...</span>
+                <span class="status-dot" id="status-dot"></span>
             </div>
         </header>
 
-        <!-- 主监控卡片 -->
-        <div class="monitor-grid">
-            <!-- CPU 卡片 -->
-            <div class="monitor-card" id="cpu-card">
-                <div class="card-header">
-                    <div class="card-icon cpu-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
-                            <rect x="9" y="9" width="6" height="6"></rect>
-                            <line x1="9" y1="1" x2="9" y2="4"></line>
-                            <line x1="15" y1="1" x2="15" y2="4"></line>
-                            <line x1="9" y1="20" x2="9" y2="23"></line>
-                            <line x1="15" y1="20" x2="15" y2="23"></line>
-                            <line x1="20" y1="9" x2="23" y2="9"></line>
-                            <line x1="20" y1="14" x2="23" y2="14"></line>
-                            <line x1="1" y1="9" x2="4" y2="9"></line>
-                            <line x1="1" y1="14" x2="4" y2="14"></line>
-                        </svg>
-                    </div>
-                    <div class="card-title">
-                        <h3>CPU</h3>
-                        <span class="subtitle" id="cpu-cores">-- 核心</span>
+        <div class="main-area">
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-item active" data-tab="cpu">
+                    <canvas class="sparkline" id="spark-cpu" width="80" height="30"></canvas>
+                    <div class="sidebar-info">
+                        <div class="sidebar-name">CPU</div>
+                        <div class="sidebar-value" id="side-cpu">0%</div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="main-stat">
-                        <span class="stat-value" id="cpu-percent">0</span>
-                        <span class="stat-unit">%</span>
-                    </div>
-                    <div class="progress-ring">
-                        <svg viewBox="0 0 120 120">
-                            <circle class="progress-ring-bg" cx="60" cy="60" r="54"/>
-                            <circle class="progress-ring-fill cpu-ring" cx="60" cy="60" r="54"/>
-                        </svg>
+                <div class="sidebar-item" data-tab="memory">
+                    <canvas class="sparkline" id="spark-mem" width="80" height="30"></canvas>
+                    <div class="sidebar-info">
+                        <div class="sidebar-name">内存</div>
+                        <div class="sidebar-value" id="side-mem">0%</div>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <div class="detail-stat">
-                        <span class="label">频率</span>
-                        <span class="value" id="cpu-freq">-- MHz</span>
-                    </div>
-                    <div class="detail-stat">
-                        <span class="label">负载</span>
-                        <span class="value" id="cpu-load">--</span>
+                <div class="sidebar-item" data-tab="disk">
+                    <canvas class="sparkline" id="spark-disk" width="80" height="30"></canvas>
+                    <div class="sidebar-info">
+                        <div class="sidebar-name">磁盘</div>
+                        <div class="sidebar-value" id="side-disk">0%</div>
                     </div>
                 </div>
-                <div class="per-cpu-bars" id="per-cpu-bars"></div>
-            </div>
-
-            <!-- 内存 卡片 -->
-            <div class="monitor-card" id="memory-card">
-                <div class="card-header">
-                    <div class="card-icon memory-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
-                            <line x1="6" y1="8" x2="6" y2="8.01"></line>
-                            <line x1="10" y1="8" x2="10" y2="8.01"></line>
-                            <line x1="14" y1="8" x2="14" y2="8.01"></line>
-                            <line x1="18" y1="8" x2="18" y2="8.01"></line>
-                            <line x1="6" y1="12" x2="6" y2="12.01"></line>
-                            <line x1="10" y1="12" x2="10" y2="12.01"></line>
-                            <line x1="14" y1="12" x2="14" y2="12.01"></line>
-                            <line x1="18" y1="12" x2="18" y2="12.01"></line>
-                            <line x1="6" y1="16" x2="6" y2="16.01"></line>
-                            <line x1="10" y1="16" x2="10" y2="16.01"></line>
-                            <line x1="14" y1="16" x2="14" y2="16.01"></line>
-                            <line x1="18" y1="16" x2="18" y2="16.01"></line>
-                        </svg>
-                    </div>
-                    <div class="card-title">
-                        <h3>内存</h3>
-                        <span class="subtitle" id="memory-total">-- GB</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="main-stat">
-                        <span class="stat-value" id="memory-percent">0</span>
-                        <span class="stat-unit">%</span>
-                    </div>
-                    <div class="progress-ring">
-                        <svg viewBox="0 0 120 120">
-                            <circle class="progress-ring-bg" cx="60" cy="60" r="54"/>
-                            <circle class="progress-ring-fill memory-ring" cx="60" cy="60" r="54"/>
-                        </svg>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <div class="detail-stat">
-                        <span class="label">已用</span>
-                        <span class="value" id="memory-used">-- GB</span>
-                    </div>
-                    <div class="detail-stat">
-                        <span class="label">可用</span>
-                        <span class="value" id="memory-free">-- GB</span>
-                    </div>
-                </div>
-                <div class="memory-bar-container">
-                    <div class="memory-bar">
-                        <div class="memory-bar-used" id="memory-bar-used"></div>
-                        <div class="memory-bar-swap" id="memory-bar-swap"></div>
-                    </div>
-                    <div class="memory-legend">
-                        <span><span class="legend-dot used"></span> 已用</span>
-                        <span><span class="legend-dot swap"></span> 交换</span>
-                        <span><span class="legend-dot free"></span> 空闲</span>
+                <div class="sidebar-item" data-tab="network">
+                    <canvas class="sparkline" id="spark-net" width="80" height="30"></canvas>
+                    <div class="sidebar-info">
+                        <div class="sidebar-name">网络</div>
+                        <div class="sidebar-value" id="side-net">0 B/s</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 磁盘 卡片 -->
-            <div class="monitor-card" id="disk-card">
-                <div class="card-header">
-                    <div class="card-icon disk-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <ellipse cx="12" cy="12" rx="10" ry="10"></ellipse>
-                            <path d="M12 2a10 10 0 0 1 10 10"></path>
-                            <path d="M12 12l4-4"></path>
-                        </svg>
-                    </div>
-                    <div class="card-title">
-                        <h3>磁盘</h3>
-                        <span class="subtitle">存储使用情况</span>
-                    </div>
+            <div class="detail-panel">
+                <div class="chart-area">
+                    <canvas id="detail-chart" class="detail-chart"></canvas>
                 </div>
-                <div class="card-body disk-body">
-                    <div class="disk-list" id="disk-list"></div>
-                </div>
-            </div>
 
-            <!-- 网络 卡片 -->
-            <div class="monitor-card" id="network-card">
-                <div class="card-header">
-                    <div class="card-icon network-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                            <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                            <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                        </svg>
+                <div class="stats-area" id="stats-area">
+                    <div class="stats-panel" id="stats-cpu">
+                        <div class="stat-row"><span class="stat-label">使用率</span><span class="stat-value" id="cpu-percent">0%</span></div>
+                        <div class="stat-row"><span class="stat-label">核心数</span><span class="stat-value" id="cpu-cores">--</span></div>
+                        <div class="stat-row"><span class="stat-label">频率</span><span class="stat-value" id="cpu-freq">-- MHz</span></div>
+                        <div class="stat-row"><span class="stat-label">负载</span><span class="stat-value" id="cpu-load">--</span></div>
                     </div>
-                    <div class="card-title">
-                        <h3>网络</h3>
-                        <span class="subtitle" id="net-connections">-- 连接</span>
+                    <div class="stats-panel hidden" id="stats-memory">
+                        <div class="stat-row"><span class="stat-label">使用率</span><span class="stat-value" id="mem-percent">0%</span></div>
+                        <div class="stat-row"><span class="stat-label">总计</span><span class="stat-value" id="mem-total">--</span></div>
+                        <div class="stat-row"><span class="stat-label">已用</span><span class="stat-value" id="mem-used">--</span></div>
+                        <div class="stat-row"><span class="stat-label">可用</span><span class="stat-value" id="mem-free">--</span></div>
+                        <div class="stat-row"><span class="stat-label">交换</span><span class="stat-value" id="mem-swap">--</span></div>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="network-stats">
-                        <div class="net-stat upload">
-                            <svg class="icon-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="19" x2="12" y2="5"></line>
-                                <polyline points="5 12 12 5 19 12"></polyline>
-                            </svg>
-                            <div class="net-info">
-                                <span class="net-label">上传</span>
-                                <span class="net-value" id="net-upload">0 B/s</span>
-                            </div>
-                        </div>
-                        <div class="net-stat download">
-                            <svg class="icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <polyline points="19 12 12 19 5 12"></polyline>
-                            </svg>
-                            <div class="net-info">
-                                <span class="net-label">下载</span>
-                                <span class="net-value" id="net-download">0 B/s</span>
-                            </div>
-                        </div>
+                    <div class="stats-panel hidden" id="stats-disk">
+                        <div class="stat-row"><span class="stat-label">磁盘</span><span class="stat-value" id="disk-count">--</span></div>
+                        <div class="disk-detail-list" id="disk-detail-list"></div>
                     </div>
-                    <div class="network-total">
-                        <div class="total-stat">
-                            <span class="total-label">总上传</span>
-                            <span class="total-value" id="net-total-upload">0 GB</span>
-                        </div>
-                        <div class="total-stat">
-                            <span class="total-label">总下载</span>
-                            <span class="total-value" id="net-total-download">0 GB</span>
-                        </div>
+                    <div class="stats-panel hidden" id="stats-network">
+                        <div class="stat-row"><span class="stat-label">上传速度</span><span class="stat-value" id="net-up">0 B/s</span></div>
+                        <div class="stat-row"><span class="stat-label">下载速度</span><span class="stat-value" id="net-down">0 B/s</span></div>
+                        <div class="stat-row"><span class="stat-label">总上传</span><span class="stat-value" id="net-total-up">0</span></div>
+                        <div class="stat-row"><span class="stat-label">总下载</span><span class="stat-value" id="net-total-down">0</span></div>
+                        <div class="stat-row"><span class="stat-label">连接数</span><span class="stat-value" id="net-conns">--</span></div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- 图表区域 -->
-        <div class="charts-section">
-            <div class="chart-container">
-                <div class="chart-header">
-                    <h3>
-                        <svg class="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="18" y1="20" x2="18" y2="10"></line>
-                            <line x1="12" y1="20" x2="12" y2="4"></line>
-                            <line x1="6" y1="20" x2="6" y2="14"></line>
-                        </svg>
-                        CPU 历史
-                    </h3>
-                </div>
-                <canvas id="cpu-chart" class="line-chart"></canvas>
-            </div>
-            <div class="chart-container">
-                <div class="chart-header">
-                    <h3>
-                        <svg class="icon-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18"></path>
-                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"></path>
-                        </svg>
-                        内存历史
-                    </h3>
-                </div>
-                <canvas id="memory-chart" class="line-chart"></canvas>
-            </div>
-        </div>
-
-
     </div>
 
-    <script src="/static/js/monitor.js?v=5" defer></script>
+    <script src="/static/js/monitor.js"></script>
 </body>
 </html>
