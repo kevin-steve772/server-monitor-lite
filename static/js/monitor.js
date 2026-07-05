@@ -58,43 +58,39 @@ class Monitor {
 
     /* ---- drag-to-tear from sidebar ---- */
     addDragTear(el) {
-        let startX, startY, dragging = false, moved = false;
+        let startX = null, startY = null, moved = false;
         const tab = el.dataset.tab;
 
-        el.addEventListener('mousedown', e => {
+        const onDown = e => {
             startX = e.clientX;
             startY = e.clientY;
-            dragging = false;
             moved = false;
-        });
+        };
 
-        document.addEventListener('mousemove', e => {
-            if (!startX) return;
+        const onMove = e => {
+            if (startX == null) return;
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
             if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-                if (!dragging) {
-                    dragging = true;
+                if (!moved) {
                     moved = true;
                     this.createFloatWindow(tab, e.clientX - 160, e.clientY - 20);
                 }
             }
-        });
+        };
 
-        const reset = () => {
+        const onUp = () => {
             if (!moved && startX != null) {
                 this.switchTab(tab);
             }
             startX = null;
-            dragging = false;
+            startY = null;
             moved = false;
         };
 
-        el.addEventListener('mouseup', reset);
-        el.addEventListener('mouseleave', () => {
-            if (!dragging) startX = null;
-        });
-        document.addEventListener('mouseup', reset);
+        el.addEventListener('mousedown', onDown);
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
     }
 
     /* ---- floating window management ---- */
