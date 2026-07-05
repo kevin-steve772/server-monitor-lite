@@ -60,7 +60,8 @@ class Monitor {
     addDragTear(el) {
         const tab = el.dataset.tab;
         let clickTimer = null;
-        el.addEventListener('click', () => {
+        el.addEventListener('click', e => {
+            e.preventDefault();
             if (clickTimer) {
                 clearTimeout(clickTimer);
                 clickTimer = null;
@@ -71,7 +72,8 @@ class Monitor {
                 this.switchTab(tab);
             }, 200);
         });
-        el.addEventListener('dblclick', () => {
+        el.addEventListener('dblclick', e => {
+            e.preventDefault();
             if (clickTimer) {
                 clearTimeout(clickTimer);
                 clickTimer = null;
