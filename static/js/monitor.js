@@ -22,6 +22,17 @@ class Monitor {
     }
 
     init() {
+        document.querySelectorAll('.menu-item').forEach(el => {
+            el.addEventListener('click', () => {
+                const tab = el.dataset.tab;
+                if (this.floatWindows[tab]) {
+                    this.bringToFront(tab);
+                } else {
+                    const rect = el.getBoundingClientRect();
+                    this.createFloatWindow(tab, rect.left, rect.bottom + 4, 320, 260, true);
+                }
+            });
+        });
         const layout = this.loadLayout();
         if (layout && Object.keys(layout).length > 0) {
             this.restoreLayout(layout);
@@ -39,7 +50,7 @@ class Monitor {
         const cols = 2;
         const gap = 6;
         const top = 4;
-        const headerH = 32;
+        const headerH = 60;
         const availW = window.innerWidth;
         const availH = window.innerHeight - headerH - top;
         const w = (availW - gap) / cols;
@@ -182,7 +193,6 @@ class Monitor {
     }
 
     restoreLayout(layout) {
-        const headerH = 32;
         for (const tab in layout) {
             const { x, y, w, h } = layout[tab];
             this.createFloatWindow(tab, x, y, w, h, false);

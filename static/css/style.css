@@ -61,10 +61,35 @@ body {
     background: var(--ok);
 }
 
+/* ---- menu bar ---- */
+.menubar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 12px;
+    height: 28px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.menu-item {
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--text2);
+    user-select: none;
+}
+
+.menu-item:hover {
+    background: var(--card);
+    color: var(--text);
+}
+
 /* ---- floating windows ---- */
 #float-container {
     position: fixed;
-    top: 32px;
+    top: 60px;
     left: 0;
     right: 0;
     bottom: 0;
