@@ -7,6 +7,8 @@ class Monitor {
         this.diskHistory = new Array(this.historyLen).fill(0);
         this.netUpHistory = new Array(this.historyLen).fill(0);
         this.netDownHistory = new Array(this.historyLen).fill(0);
+        this.latestData = {};
+        this.floatWindows = {};
 
         this.dom = {
             hostname: document.getElementById('hostname'),
@@ -38,18 +40,213 @@ class Monitor {
             netTotalUp: document.getElementById('net-total-up'),
             netTotalDown: document.getElementById('net-total-down'),
             netConns: document.getElementById('net-conns'),
+            floatContainer: document.getElementById('float-container'),
         };
+        this.tabNames = { cpu: 'CPU', memory: '内存', disk: '磁盘', network: '网络' };
+        this.tabColors = { cpu: '#58a6ff', memory: '#f0883e', disk: '#3fb950', network: '#d2a8ff' };
         this.init();
     }
 
     init() {
         document.querySelectorAll('.sidebar-item').forEach(el => {
-            el.addEventListener('click', () => this.switchTab(el.dataset.tab));
+            this.addDragTear(el);
         });
+        this.loadLayout();
         this.fetchAll();
         setInterval(() => this.fetchAll(), 4000);
     }
 
+    /* ---- drag-to-tear from sidebar ---- */
+    addDragTear(el) {
+        let startX, startY, dragging = false, moved = false;
+        const tab = el.dataset.tab;
+
+        el.addEventListener('mousedown', e => {
+            startX = e.clientX;
+            startY = e.clientY;
+            dragging = false;
+            moved = false;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!startX) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                if (!dragging) {
+                    dragging = true;
+                    moved = true;
+                    this.createFloatWindow(tab, e.clientX - 160, e.clientY - 20);
+                }
+            }
+        });
+
+        const reset = () => {
+            if (!moved && startX != null) {
+                this.switchTab(tab);
+            }
+            startX = null;
+            dragging = false;
+            moved = false;
+        };
+
+        el.addEventListener('mouseup', reset);
+        el.addEventListener('mouseleave', () => {
+            if (!dragging) startX = null;
+        });
+        document.addEventListener('mouseup', reset);
+    }
+
+    /* ---- floating window management ---- */
+    createFloatWindow(tab, x, y) {
+        if (this.floatWindows[tab]) { this.bringToFront(tab); return; }
+
+        const saved = this.loadWindowLayout(tab);
+        const W = saved.w || 320;
+        const H = saved.h || 260;
+        const px = x != null ? x : (saved.x || 100 + Object.keys(this.floatWindows).length * 30);
+        const py = y != null ? y : (saved.y || 60 + Object.keys(this.floatWindows).length * 30);
+
+        const el = document.createElement('div');
+        el.className = 'float-window';
+        el.dataset.tab = tab;
+        el.style.cssText = `left:${px}px; top:${py}px; width:${W}px; height:${H}px; z-index:${1000 + Object.keys(this.floatWindows).length}`;
+
+        el.innerHTML = `
+            <div class="float-header">
+                <span class="float-title">${this.tabNames[tab]}</span>
+                <button class="float-close">×</button>
+            </div>
+            <div class="float-body">
+                <div class="float-chart-wrap">
+                    <canvas class="float-chart"></canvas>
+                </div>
+                <div class="float-stats" id="float-stats-${tab}"></div>
+            </div>
+            <div class="float-resize-handle"></div>
+        `;
+
+        this.dom.floatContainer.appendChild(el);
+
+        const fw = {
+            el,
+            canvas: el.querySelector('.float-chart'),
+            statsEl: el.querySelector('.float-stats'),
+            tab,
+        };
+        this.floatWindows[tab] = fw;
+
+        this.makeHeaderDraggable(el);
+        this.makeResizable(el);
+        el.querySelector('.float-close').addEventListener('click', () => this.closeFloatWindow(tab));
+        el.addEventListener('mousedown', () => this.bringToFront(tab));
+
+        this.saveLayout();
+        this.updateFloatWindow(fw);
+    }
+
+    closeFloatWindow(tab) {
+        const fw = this.floatWindows[tab];
+        if (!fw) return;
+        fw.el.remove();
+        delete this.floatWindows[tab];
+        this.saveLayout();
+    }
+
+    bringToFront(tab) {
+        const fw = this.floatWindows[tab];
+        if (!fw) return;
+        const maxZ = Math.max(1000, ...Object.values(this.floatWindows).map(w => parseInt(w.el.style.zIndex) || 1000));
+        fw.el.style.zIndex = maxZ + 1;
+    }
+
+    makeHeaderDraggable(el) {
+        const header = el.querySelector('.float-header');
+        let startX, startY, startL, startT;
+
+        header.addEventListener('mousedown', e => {
+            if (e.target.tagName === 'BUTTON') return;
+            startX = e.clientX;
+            startY = e.clientY;
+            startL = parseInt(el.style.left);
+            startT = parseInt(el.style.top);
+            const onMove = me => {
+                el.style.left = (startL + me.clientX - startX) + 'px';
+                el.style.top = (startT + me.clientY - startY) + 'px';
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                this.saveLayout();
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
+    makeResizable(el) {
+        const handle = el.querySelector('.float-resize-handle');
+        let startX, startY, startW, startH;
+
+        handle.addEventListener('mousedown', e => {
+            e.stopPropagation();
+            startX = e.clientX;
+            startY = e.clientY;
+            startW = el.offsetWidth;
+            startH = el.offsetHeight;
+            const onMove = me => {
+                el.style.width = Math.max(240, startW + me.clientX - startX) + 'px';
+                el.style.height = Math.max(180, startH + me.clientY - startY) + 'px';
+            };
+            const onUp = () => {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                this.saveLayout();
+            };
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+    }
+
+    /* ---- layout persistence ---- */
+    saveLayout() {
+        const layout = {};
+        for (const tab in this.floatWindows) {
+            const el = this.floatWindows[tab].el;
+            layout[tab] = {
+                x: parseInt(el.style.left),
+                y: parseInt(el.style.top),
+                w: el.offsetWidth,
+                h: el.offsetHeight,
+            };
+        }
+        try { localStorage.setItem('floatLayout', JSON.stringify(layout)); } catch {}
+    }
+
+    loadLayout() {
+        try {
+            const raw = localStorage.getItem('floatLayout');
+            if (!raw) return;
+            const layout = JSON.parse(raw);
+            for (const tab in layout) {
+                this.createFloatWindow(tab, layout[tab].x, layout[tab].y);
+                const el = this.floatWindows[tab].el;
+                el.style.width = layout[tab].w + 'px';
+                el.style.height = layout[tab].h + 'px';
+            }
+        } catch {}
+    }
+
+    loadWindowLayout(tab) {
+        try {
+            const raw = localStorage.getItem('floatLayout');
+            if (!raw) return {};
+            const layout = JSON.parse(raw);
+            return layout[tab] || {};
+        } catch { return {}; }
+    }
+
+    /* ---- tab switching ---- */
     switchTab(tab) {
         this.currentTab = tab;
         document.querySelectorAll('.sidebar-item').forEach(el => {
@@ -61,10 +258,12 @@ class Monitor {
         this.drawDetail();
     }
 
+    /* ---- data fetching ---- */
     async fetchAll() {
         try {
             const res = await fetch('/api/all');
             const data = await res.json();
+            this.latestData = data;
             this.dom.connectionStatus.textContent = '已连接';
             this.dom.statusDot.className = 'status-dot connected';
             this.updateUI(data);
@@ -82,6 +281,9 @@ class Monitor {
         if (data.network) this.updateNetwork(data.network);
         this.updateSidebar();
         this.drawDetail();
+        for (const tab in this.floatWindows) {
+            this.updateFloatWindow(this.floatWindows[tab]);
+        }
     }
 
     shiftPush(arr, val) {
@@ -140,6 +342,7 @@ class Monitor {
         }
     }
 
+    /* ---- sidebar ---- */
     updateSidebar() {
         this.dom.sideCpu.textContent = this.cpuHistory[this.historyLen - 1].toFixed(1) + '%';
         this.dom.sideMem.textContent = this.memHistory[this.historyLen - 1].toFixed(1) + '%';
@@ -157,18 +360,14 @@ class Monitor {
         const h = canvas.height;
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, w, h);
-
         const len = data.length;
         if (len < 2) return;
-
         if (yMin === undefined) {
             const mx = Math.max(...data, 1);
-            yMin = 0;
-            yMax = mx * 1.3;
+            yMin = 0; yMax = mx * 1.3;
         }
         const range = yMax - yMin || 1;
         const xStep = w / (len - 1);
-
         ctx.beginPath();
         for (let i = 0; i < len; i++) {
             const x = i * xStep;
@@ -181,14 +380,20 @@ class Monitor {
         ctx.stroke();
     }
 
+    /* ---- detail chart ---- */
     drawDetail() {
         const canvas = this.dom.detailChart;
         if (!canvas) return;
+        this.drawChartOnCanvas(canvas, this.currentTab, this.tabColors[this.currentTab]);
+    }
+
+    drawChartOnCanvas(canvas, tab, color) {
         const parent = canvas.parentElement;
         const pw = parent.clientWidth;
         const ph = parent.clientHeight;
-        const w = pw - 16;
-        const h = ph - 16;
+        const pad = tab === 'network' ? 0 : 16;
+        const w = pw - pad;
+        const h = ph - pad;
         if (w <= 0 || h <= 0) return;
 
         canvas.width = w;
@@ -196,27 +401,18 @@ class Monitor {
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, w, h);
 
-        let data, color, yMin, yMax;
-        switch (this.currentTab) {
-            case 'cpu':
-                data = this.cpuHistory; color = '#58a6ff'; yMin = 0; yMax = 100;
-                break;
-            case 'memory':
-                data = this.memHistory; color = '#f0883e'; yMin = 0; yMax = 100;
-                break;
-            case 'disk':
-                data = this.diskHistory; color = '#3fb950'; yMin = 0; yMax = 100;
-                break;
-            case 'network':
-                data = this.netUpHistory; color = '#d2a8ff';
-                break;
+        let data, yMin, yMax;
+        switch (tab) {
+            case 'cpu': data = this.cpuHistory; yMin = 0; yMax = 100; break;
+            case 'memory': data = this.memHistory; yMin = 0; yMax = 100; break;
+            case 'disk': data = this.diskHistory; yMin = 0; yMax = 100; break;
+            case 'network': data = this.netUpHistory; break;
         }
         if (!data || data.length < 2) return;
 
         if (yMin === undefined) {
             const mx = Math.max(...data, 1);
-            yMin = 0;
-            yMax = mx * 1.3;
+            yMin = 0; yMax = mx * 1.3;
         }
 
         const range = yMax - yMin || 1;
@@ -227,21 +423,14 @@ class Monitor {
         ctx.lineWidth = 1;
         for (let i = 1; i <= 4; i++) {
             const y = (h / 4) * i;
-            ctx.beginPath();
-            ctx.moveTo(0, y);
-            ctx.lineTo(w, y);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
         }
 
-        ctx.beginPath();
-        ctx.moveTo(0, h);
+        ctx.beginPath(); ctx.moveTo(0, h);
         for (let i = 0; i < len; i++) {
-            const x = i * xStep;
-            const y = h - ((data[i] - yMin) / range) * h;
-            ctx.lineTo(x, y);
+            ctx.lineTo(i * xStep, h - ((data[i] - yMin) / range) * h);
         }
-        ctx.lineTo(w, h);
-        ctx.closePath();
+        ctx.lineTo(w, h); ctx.closePath();
         ctx.fillStyle = color + '20';
         ctx.fill();
 
@@ -249,23 +438,78 @@ class Monitor {
         for (let i = 0; i < len; i++) {
             const x = i * xStep;
             const y = h - ((data[i] - yMin) / range) * h;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
 
         const val = data[len - 1];
-        const display = this.currentTab === 'network'
-            ? this.formatSpeed(val)
-            : val.toFixed(1) + '%';
+        const display = tab === 'network' ? this.formatSpeed(val) : val.toFixed(1) + '%';
         ctx.fillStyle = color;
         ctx.font = 'bold 22px monospace';
         ctx.textAlign = 'right';
         ctx.fillText(display, w - 4, 22);
     }
 
+    /* ---- floating window content ---- */
+    updateFloatWindow(fw) {
+        this.drawChartOnCanvas(fw.canvas, fw.tab, this.tabColors[fw.tab]);
+        this.updateFloatStats(fw);
+    }
+
+    updateFloatStats(fw) {
+        const data = this.latestData;
+        if (!data) return;
+
+        let html = '';
+        switch (fw.tab) {
+            case 'cpu': {
+                const c = data.cpu;
+                if (!c) break;
+                html = `
+                    <div class="fs-row"><span class="fs-label">使用率</span><span class="fs-value">${c.percent.toFixed(1)}%</span></div>
+                    <div class="fs-row"><span class="fs-label">核心</span><span class="fs-value">${c.count}</span></div>
+                    <div class="fs-row"><span class="fs-label">频率</span><span class="fs-value">${c.freq ? c.freq.toFixed(0) + ' MHz' : '--'}</span></div>
+                    <div class="fs-row"><span class="fs-label">负载</span><span class="fs-value">${c.load_avg ? c.load_avg.map(l => l.toFixed(2)).join(' / ') : '--'}</span></div>
+                `;
+                break;
+            }
+            case 'memory': {
+                const m = data.memory;
+                if (!m) break;
+                html = `
+                    <div class="fs-row"><span class="fs-label">使用率</span><span class="fs-value">${m.percent.toFixed(1)}%</span></div>
+                    <div class="fs-row"><span class="fs-label">总计</span><span class="fs-value">${this.formatBytes(m.total)}</span></div>
+                    <div class="fs-row"><span class="fs-label">已用</span><span class="fs-value">${this.formatBytes(m.used)}</span></div>
+                    <div class="fs-row"><span class="fs-label">可用</span><span class="fs-value">${this.formatBytes(m.available)}</span></div>
+                `;
+                break;
+            }
+            case 'disk': {
+                const disks = data.disk;
+                if (!disks) break;
+                html = disks.slice(0, 3).map(d =>
+                    `<div class="fs-row" style="width:100%"><span class="fs-label">${d.device}</span><span class="fs-value">${d.percent}% (${this.formatBytes(d.used)}/${this.formatBytes(d.total)})</span></div>`
+                ).join('');
+                break;
+            }
+            case 'network': {
+                const n = data.network;
+                if (!n) break;
+                html = `
+                    <div class="fs-row"><span class="fs-label">上传</span><span class="fs-value">${n.upload_speed !== undefined ? this.formatSpeed(n.upload_speed) : '--'}</span></div>
+                    <div class="fs-row"><span class="fs-label">下载</span><span class="fs-value">${n.download_speed !== undefined ? this.formatSpeed(n.download_speed) : '--'}</span></div>
+                    <div class="fs-row"><span class="fs-label">总↑</span><span class="fs-value">${this.formatBytes(n.bytes_sent)}</span></div>
+                    <div class="fs-row"><span class="fs-label">总↓</span><span class="fs-value">${this.formatBytes(n.bytes_recv)}</span></div>
+                `;
+                break;
+            }
+        }
+        fw.statsEl.innerHTML = html;
+    }
+
+    /* ---- utilities ---- */
     formatSpeed(bps) {
         if (bps === 0) return '0 B/s';
         const k = 1024;
