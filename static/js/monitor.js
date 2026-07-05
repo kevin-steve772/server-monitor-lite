@@ -49,48 +49,36 @@ class Monitor {
 
     init() {
         document.querySelectorAll('.sidebar-item').forEach(el => {
-            this.addDragTear(el);
+            this.addTabEvents(el);
         });
         this.loadLayout();
         this.fetchAll();
         setInterval(() => this.fetchAll(), 4000);
     }
 
-    /* ---- drag-to-tear from sidebar ---- */
+    /* ---- double-click to tear out ---- */
     addDragTear(el) {
-        let startX = null, startY = null, moved = false;
         const tab = el.dataset.tab;
-
-        const onDown = e => {
-            startX = e.clientX;
-            startY = e.clientY;
-            moved = false;
-        };
-
-        const onMove = e => {
-            if (startX == null) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
-                if (!moved) {
-                    moved = true;
-                    this.createFloatWindow(tab, e.clientX - 160, e.clientY - 20);
-                }
+        let clickTimer = null;
+        el.addEventListener('click', () => {
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                return;
             }
-        };
-
-        const onUp = () => {
-            if (!moved && startX != null) {
+            clickTimer = setTimeout(() => {
+                clickTimer = null;
                 this.switchTab(tab);
+            }, 200);
+        });
+        el.addEventListener('dblclick', () => {
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
             }
-            startX = null;
-            startY = null;
-            moved = false;
-        };
-
-        el.addEventListener('mousedown', onDown);
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+            const rect = el.getBoundingClientRect();
+            this.createFloatWindow(tab, rect.left + 60, rect.top - 10);
+        });
     }
 
     /* ---- floating window management ---- */
