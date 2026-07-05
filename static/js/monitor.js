@@ -56,30 +56,14 @@ class Monitor {
         setInterval(() => this.fetchAll(), 4000);
     }
 
-    /* ---- double-click to tear out ---- */
+    /* ---- right-click to tear out ---- */
     addDragTear(el) {
         const tab = el.dataset.tab;
-        let clickTimer = null;
-        el.addEventListener('click', e => {
+        el.addEventListener('click', () => this.switchTab(tab));
+        el.addEventListener('contextmenu', e => {
             e.preventDefault();
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-                clickTimer = null;
-                return;
-            }
-            clickTimer = setTimeout(() => {
-                clickTimer = null;
-                this.switchTab(tab);
-            }, 200);
-        });
-        el.addEventListener('dblclick', e => {
-            e.preventDefault();
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-                clickTimer = null;
-            }
             const rect = el.getBoundingClientRect();
-            this.createFloatWindow(tab, rect.left + 60, rect.top - 10);
+            this.createFloatWindow(tab, e.clientX - 160, e.clientY - 20);
         });
     }
 
