@@ -7,9 +7,6 @@
 :root {
     --bg: #0d1117;
     --card: #161b22;
-    --sidebar-bg: #0d1117;
-    --sidebar-hover: #1c2128;
-    --sidebar-active: #1c2128;
     --text: #e6edf3;
     --text2: #8b949e;
     --cpu: #58a6ff;
@@ -29,26 +26,18 @@ body {
     overflow: hidden;
 }
 
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 6px 10px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
+    padding: 6px 12px;
     border-bottom: 1px solid var(--border);
+    height: 32px;
     flex-shrink: 0;
 }
 
 .logo {
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
 }
 
@@ -72,189 +61,13 @@ body {
     background: var(--ok);
 }
 
-/* ---- main: sidebar + detail ---- */
-.main-area {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    gap: 6px;
-    padding-top: 6px;
-}
-
-/* ---- sidebar ---- */
-.sidebar {
-    width: 180px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    overflow-y: auto;
-}
-
-.sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: none;
-    user-select: none;
-    -webkit-user-select: none;
-}
-
-.sidebar-item:hover {
-    background: var(--sidebar-hover);
-}
-
-.sidebar-item.active {
-    background: var(--sidebar-active);
-    border-color: var(--border);
-}
-
-.sparkline {
-    width: 60px;
-    height: 24px;
-    flex-shrink: 0;
-    border-radius: 2px;
-}
-
-.sidebar-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.sidebar-name {
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.sidebar-value {
-    font-size: 0.65rem;
-    color: var(--text2);
-    font-family: 'Courier New', monospace;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* ---- detail panel ---- */
-.detail-panel {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.chart-area {
-    flex: 1;
-    min-height: 0;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px;
-    display: flex;
-}
-
-.detail-chart {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-/* ---- stats ---- */
-.stats-area {
-    flex-shrink: 0;
-}
-
-.stats-panel {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 0;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-}
-
-.stats-panel.hidden {
-    display: none;
-}
-
-.stat-row {
-    width: 50%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 2px 0;
-}
-
-.stat-label {
-    font-size: 0.7rem;
-    color: var(--text2);
-    flex-shrink: 0;
-}
-
-.stat-row .stat-value {
-    font-size: 0.75rem;
-    font-weight: 600;
-    font-family: 'Courier New', monospace;
-    color: var(--text);
-}
-
-/* disk detail inside stats */
-.disk-detail-list {
-    width: 100%;
-    margin-top: 4px;
-}
-
-.disk-detail-item {
-    padding: 3px 0;
-    font-size: 0.7rem;
-}
-
-.disk-detail-item .disk-info {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 2px;
-}
-
-.disk-detail-item .disk-device {
-    font-weight: 600;
-    color: var(--disk);
-}
-
-.disk-detail-item .disk-size {
-    color: var(--text2);
-}
-
-.disk-detail-item .progress-bar {
-    height: 3px;
-    background: var(--bg);
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.disk-detail-item .progress-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    width: 0%;
-    background: var(--disk);
-}
-
-@media (max-width: 700px) {
-    .sidebar { width: 140px; }
-    .sparkline { width: 40px; height: 20px; }
-    .stat-row { width: 100%; }
-}
-
 /* ---- floating windows ---- */
 #float-container {
     position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
+    top: 32px;
+    left: 0;
+    right: 0;
+    bottom: 0;
     pointer-events: none;
     z-index: 1000;
 }
@@ -270,14 +83,13 @@ body {
     flex-direction: column;
     min-width: 240px;
     min-height: 180px;
-    user-select: none;
 }
 
 .float-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
+    padding: 5px 10px;
     cursor: grab;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
@@ -288,7 +100,7 @@ body {
 }
 
 .float-title {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
 }
 
@@ -296,7 +108,7 @@ body {
     background: none;
     border: none;
     color: var(--text2);
-    font-size: 1.1rem;
+    font-size: 1rem;
     cursor: pointer;
     padding: 0 2px;
     line-height: 1;
@@ -328,7 +140,7 @@ body {
 .float-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px 0;
+    gap: 1px 0;
     padding-top: 4px;
     flex-shrink: 0;
     font-size: 0.65rem;

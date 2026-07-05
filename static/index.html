@@ -7,85 +7,17 @@
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">Server Monitor Lite</div>
-            <div class="system-info">
-                <span id="hostname">--</span>
-                <span>·</span>
-                <span id="uptime">--</span>
-                <span>·</span>
-                <span id="connection-status">连接中...</span>
-                <span class="status-dot" id="status-dot"></span>
-            </div>
-        </header>
-
-        <div class="main-area">
-            <div class="sidebar" id="sidebar">
-                <div class="sidebar-item active" data-tab="cpu">
-                    <canvas class="sparkline" id="spark-cpu" width="80" height="30"></canvas>
-                    <div class="sidebar-info">
-                        <div class="sidebar-name">CPU</div>
-                        <div class="sidebar-value" id="side-cpu">0%</div>
-                    </div>
-                </div>
-                <div class="sidebar-item" data-tab="memory">
-                    <canvas class="sparkline" id="spark-mem" width="80" height="30"></canvas>
-                    <div class="sidebar-info">
-                        <div class="sidebar-name">内存</div>
-                        <div class="sidebar-value" id="side-mem">0%</div>
-                    </div>
-                </div>
-                <div class="sidebar-item" data-tab="disk">
-                    <canvas class="sparkline" id="spark-disk" width="80" height="30"></canvas>
-                    <div class="sidebar-info">
-                        <div class="sidebar-name">磁盘</div>
-                        <div class="sidebar-value" id="side-disk">0%</div>
-                    </div>
-                </div>
-                <div class="sidebar-item" data-tab="network">
-                    <canvas class="sparkline" id="spark-net" width="80" height="30"></canvas>
-                    <div class="sidebar-info">
-                        <div class="sidebar-name">网络</div>
-                        <div class="sidebar-value" id="side-net">0 B/s</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-panel">
-                <div class="chart-area">
-                    <canvas id="detail-chart" class="detail-chart"></canvas>
-                </div>
-
-                <div class="stats-area" id="stats-area">
-                    <div class="stats-panel" id="stats-cpu">
-                        <div class="stat-row"><span class="stat-label">使用率</span><span class="stat-value" id="cpu-percent">0%</span></div>
-                        <div class="stat-row"><span class="stat-label">核心数</span><span class="stat-value" id="cpu-cores">--</span></div>
-                        <div class="stat-row"><span class="stat-label">频率</span><span class="stat-value" id="cpu-freq">-- MHz</span></div>
-                        <div class="stat-row"><span class="stat-label">负载</span><span class="stat-value" id="cpu-load">--</span></div>
-                    </div>
-                    <div class="stats-panel hidden" id="stats-memory">
-                        <div class="stat-row"><span class="stat-label">使用率</span><span class="stat-value" id="mem-percent">0%</span></div>
-                        <div class="stat-row"><span class="stat-label">总计</span><span class="stat-value" id="mem-total">--</span></div>
-                        <div class="stat-row"><span class="stat-label">已用</span><span class="stat-value" id="mem-used">--</span></div>
-                        <div class="stat-row"><span class="stat-label">可用</span><span class="stat-value" id="mem-free">--</span></div>
-                        <div class="stat-row"><span class="stat-label">交换</span><span class="stat-value" id="mem-swap">--</span></div>
-                    </div>
-                    <div class="stats-panel hidden" id="stats-disk">
-                        <div class="stat-row"><span class="stat-label">磁盘</span><span class="stat-value" id="disk-count">--</span></div>
-                        <div class="disk-detail-list" id="disk-detail-list"></div>
-                    </div>
-                    <div class="stats-panel hidden" id="stats-network">
-                        <div class="stat-row"><span class="stat-label">上传速度</span><span class="stat-value" id="net-up">0 B/s</span></div>
-                        <div class="stat-row"><span class="stat-label">下载速度</span><span class="stat-value" id="net-down">0 B/s</span></div>
-                        <div class="stat-row"><span class="stat-label">总上传</span><span class="stat-value" id="net-total-up">0</span></div>
-                        <div class="stat-row"><span class="stat-label">总下载</span><span class="stat-value" id="net-total-down">0</span></div>
-                        <div class="stat-row"><span class="stat-label">连接数</span><span class="stat-value" id="net-conns">--</span></div>
-                    </div>
-                </div>
-            </div>
+    <header class="header">
+        <div class="logo">Server Monitor Lite</div>
+        <div class="system-info">
+            <span id="hostname">--</span>
+            <span>·</span>
+            <span id="uptime">--</span>
+            <span>·</span>
+            <span id="connection-status">连接中...</span>
+            <span class="status-dot" id="status-dot"></span>
         </div>
-    </div>
+    </header>
 
     <div id="float-container"></div>
     <script src="/static/js/monitor.js"></script>

@@ -1,6 +1,5 @@
 class Monitor {
     constructor() {
-        this.currentTab = 'cpu';
         this.historyLen = 60;
         this.cpuHistory = new Array(this.historyLen).fill(0);
         this.memHistory = new Array(this.historyLen).fill(0);
@@ -9,78 +8,60 @@ class Monitor {
         this.netDownHistory = new Array(this.historyLen).fill(0);
         this.latestData = {};
         this.floatWindows = {};
+        this.tabNames = { cpu: 'CPU', memory: '内存', disk: '磁盘', network: '网络' };
+        this.tabColors = { cpu: '#58a6ff', memory: '#f0883e', disk: '#3fb950', network: '#d2a8ff' };
 
         this.dom = {
             hostname: document.getElementById('hostname'),
             uptime: document.getElementById('uptime'),
             connectionStatus: document.getElementById('connection-status'),
             statusDot: document.getElementById('status-dot'),
-            sideCpu: document.getElementById('side-cpu'),
-            sideMem: document.getElementById('side-mem'),
-            sideDisk: document.getElementById('side-disk'),
-            sideNet: document.getElementById('side-net'),
-            sparkCpu: document.getElementById('spark-cpu'),
-            sparkMem: document.getElementById('spark-mem'),
-            sparkDisk: document.getElementById('spark-disk'),
-            sparkNet: document.getElementById('spark-net'),
-            detailChart: document.getElementById('detail-chart'),
-            cpuPercent: document.getElementById('cpu-percent'),
-            cpuCores: document.getElementById('cpu-cores'),
-            cpuFreq: document.getElementById('cpu-freq'),
-            cpuLoad: document.getElementById('cpu-load'),
-            memPercent: document.getElementById('mem-percent'),
-            memTotal: document.getElementById('mem-total'),
-            memUsed: document.getElementById('mem-used'),
-            memFree: document.getElementById('mem-free'),
-            memSwap: document.getElementById('mem-swap'),
-            diskCount: document.getElementById('disk-count'),
-            diskDetailList: document.getElementById('disk-detail-list'),
-            netUp: document.getElementById('net-up'),
-            netDown: document.getElementById('net-down'),
-            netTotalUp: document.getElementById('net-total-up'),
-            netTotalDown: document.getElementById('net-total-down'),
-            netConns: document.getElementById('net-conns'),
             floatContainer: document.getElementById('float-container'),
         };
-        this.tabNames = { cpu: 'CPU', memory: '内存', disk: '磁盘', network: '网络' };
-        this.tabColors = { cpu: '#58a6ff', memory: '#f0883e', disk: '#3fb950', network: '#d2a8ff' };
         this.init();
     }
 
     init() {
-        document.querySelectorAll('.sidebar-item').forEach(el => {
-            this.addTabEvents(el);
-        });
-        this.loadLayout();
+        const layout = this.loadLayout();
+        if (layout && Object.keys(layout).length > 0) {
+            this.restoreLayout(layout);
+        } else {
+            this.createDefaultWindows();
+        }
         this.fetchAll();
         setInterval(() => this.fetchAll(), 4000);
+        window.addEventListener('resize', () => this.saveLayout());
     }
 
-    /* ---- right-click to tear out ---- */
-    addDragTear(el) {
-        const tab = el.dataset.tab;
-        el.addEventListener('click', () => this.switchTab(tab));
-        el.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            const rect = el.getBoundingClientRect();
-            this.createFloatWindow(tab, e.clientX - 160, e.clientY - 20);
+    /* ---- default 2x2 grid layout ---- */
+    createDefaultWindows() {
+        const tabs = ['cpu', 'memory', 'disk', 'network'];
+        const cols = 2;
+        const gap = 6;
+        const top = 4;
+        const headerH = 32;
+        const availW = window.innerWidth;
+        const availH = window.innerHeight - headerH - top;
+        const w = (availW - gap) / cols;
+        const h = (availH - gap) / cols;
+
+        tabs.forEach((tab, i) => {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = col * (w + gap);
+            const y = top + row * (h + gap);
+            this.createFloatWindow(tab, x, y, w, h, false);
         });
     }
 
     /* ---- floating window management ---- */
-    createFloatWindow(tab, x, y) {
+    createFloatWindow(tab, x, y, w, h, userAction = true) {
         if (this.floatWindows[tab]) { this.bringToFront(tab); return; }
-
-        const saved = this.loadWindowLayout(tab);
-        const W = saved.w || 320;
-        const H = saved.h || 260;
-        const px = x != null ? x : (saved.x || 100 + Object.keys(this.floatWindows).length * 30);
-        const py = y != null ? y : (saved.y || 60 + Object.keys(this.floatWindows).length * 30);
 
         const el = document.createElement('div');
         el.className = 'float-window';
         el.dataset.tab = tab;
-        el.style.cssText = `left:${px}px; top:${py}px; width:${W}px; height:${H}px; z-index:${1000 + Object.keys(this.floatWindows).length}`;
+        el.style.cssText = `left:${x}px; top:${y}px; width:${w || 320}px; height:${h || 260}px; z-index:${1000 + Object.keys(this.floatWindows).length}`;
 
         el.innerHTML = `
             <div class="float-header">
@@ -111,7 +92,7 @@ class Monitor {
         el.querySelector('.float-close').addEventListener('click', () => this.closeFloatWindow(tab));
         el.addEventListener('mousedown', () => this.bringToFront(tab));
 
-        this.saveLayout();
+        if (userAction) this.saveLayout();
         this.updateFloatWindow(fw);
     }
 
@@ -196,36 +177,16 @@ class Monitor {
     loadLayout() {
         try {
             const raw = localStorage.getItem('floatLayout');
-            if (!raw) return;
-            const layout = JSON.parse(raw);
-            for (const tab in layout) {
-                this.createFloatWindow(tab, layout[tab].x, layout[tab].y);
-                const el = this.floatWindows[tab].el;
-                el.style.width = layout[tab].w + 'px';
-                el.style.height = layout[tab].h + 'px';
-            }
-        } catch {}
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
     }
 
-    loadWindowLayout(tab) {
-        try {
-            const raw = localStorage.getItem('floatLayout');
-            if (!raw) return {};
-            const layout = JSON.parse(raw);
-            return layout[tab] || {};
-        } catch { return {}; }
-    }
-
-    /* ---- tab switching ---- */
-    switchTab(tab) {
-        this.currentTab = tab;
-        document.querySelectorAll('.sidebar-item').forEach(el => {
-            el.classList.toggle('active', el.dataset.tab === tab);
-        });
-        document.querySelectorAll('.stats-panel').forEach(el => el.classList.add('hidden'));
-        const panel = document.getElementById('stats-' + tab);
-        if (panel) panel.classList.remove('hidden');
-        this.drawDetail();
+    restoreLayout(layout) {
+        const headerH = 32;
+        for (const tab in layout) {
+            const { x, y, w, h } = layout[tab];
+            this.createFloatWindow(tab, x, y, w, h, false);
+        }
     }
 
     /* ---- data fetching ---- */
@@ -249,8 +210,6 @@ class Monitor {
         if (data.memory) this.updateMemory(data.memory);
         if (data.disk) this.updateDisk(data.disk);
         if (data.network) this.updateNetwork(data.network);
-        this.updateSidebar();
-        this.drawDetail();
         for (const tab in this.floatWindows) {
             this.updateFloatWindow(this.floatWindows[tab]);
         }
@@ -267,159 +226,23 @@ class Monitor {
     }
 
     updateCPU(cpu) {
-        this.dom.cpuPercent.textContent = cpu.percent.toFixed(1) + '%';
-        this.dom.cpuCores.textContent = cpu.count + ' 核心';
-        this.dom.cpuFreq.textContent = cpu.freq ? cpu.freq.toFixed(0) + ' MHz' : '-- MHz';
-        this.dom.cpuLoad.textContent = cpu.load_avg ? cpu.load_avg.map(l => l.toFixed(2)).join(' / ') : '--';
         this.shiftPush(this.cpuHistory, cpu.percent);
     }
 
     updateMemory(mem) {
-        this.dom.memPercent.textContent = mem.percent.toFixed(1) + '%';
-        this.dom.memTotal.textContent = this.formatBytes(mem.total);
-        this.dom.memUsed.textContent = this.formatBytes(mem.used);
-        this.dom.memFree.textContent = this.formatBytes(mem.available);
-        this.dom.memSwap.textContent = mem.swap_total > 0
-            ? this.formatBytes(mem.swap_used) + ' / ' + this.formatBytes(mem.swap_total)
-            : '--';
         this.shiftPush(this.memHistory, mem.percent);
     }
 
     updateDisk(disks) {
-        this.dom.diskCount.textContent = disks.length + ' 个磁盘';
-        this.dom.diskDetailList.innerHTML = disks.map(d => `
-            <div class="disk-detail-item">
-                <div class="disk-info">
-                    <span class="disk-device">${d.device}</span>
-                    <span class="disk-size">${this.formatBytes(d.used)} / ${this.formatBytes(d.total)} (${d.percent}%)</span>
-                </div>
-                <div class="progress-bar"><div class="progress-bar-fill" style="width:${d.percent}%"></div></div>
-            </div>
-        `).join('');
         const avg = disks.length ? disks.reduce((s, d) => s + d.percent, 0) / disks.length : 0;
         this.shiftPush(this.diskHistory, avg);
     }
 
     updateNetwork(net) {
-        this.dom.netConns.textContent = net.connections + ' 连接';
-        this.dom.netTotalUp.textContent = this.formatBytes(net.bytes_sent);
-        this.dom.netTotalDown.textContent = this.formatBytes(net.bytes_recv);
         if (net.upload_speed !== undefined) {
-            this.dom.netUp.textContent = this.formatSpeed(net.upload_speed);
-            this.dom.netDown.textContent = this.formatSpeed(net.download_speed);
             this.shiftPush(this.netUpHistory, net.upload_speed);
             this.shiftPush(this.netDownHistory, net.download_speed);
         }
-    }
-
-    /* ---- sidebar ---- */
-    updateSidebar() {
-        this.dom.sideCpu.textContent = this.cpuHistory[this.historyLen - 1].toFixed(1) + '%';
-        this.dom.sideMem.textContent = this.memHistory[this.historyLen - 1].toFixed(1) + '%';
-        this.dom.sideDisk.textContent = this.diskHistory[this.historyLen - 1].toFixed(1) + '%';
-        this.dom.sideNet.textContent = this.formatSpeed(this.netUpHistory[this.historyLen - 1]);
-        this.drawSparkline(this.dom.sparkCpu, this.cpuHistory, '#58a6ff', 0, 100);
-        this.drawSparkline(this.dom.sparkMem, this.memHistory, '#f0883e', 0, 100);
-        this.drawSparkline(this.dom.sparkDisk, this.diskHistory, '#3fb950', 0, 100);
-        this.drawSparkline(this.dom.sparkNet, this.netUpHistory, '#d2a8ff');
-    }
-
-    drawSparkline(canvas, data, color, yMin, yMax) {
-        if (!canvas) return;
-        const w = canvas.width;
-        const h = canvas.height;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, w, h);
-        const len = data.length;
-        if (len < 2) return;
-        if (yMin === undefined) {
-            const mx = Math.max(...data, 1);
-            yMin = 0; yMax = mx * 1.3;
-        }
-        const range = yMax - yMin || 1;
-        const xStep = w / (len - 1);
-        ctx.beginPath();
-        for (let i = 0; i < len; i++) {
-            const x = i * xStep;
-            const y = h - ((data[i] - yMin) / range) * h;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    }
-
-    /* ---- detail chart ---- */
-    drawDetail() {
-        const canvas = this.dom.detailChart;
-        if (!canvas) return;
-        this.drawChartOnCanvas(canvas, this.currentTab, this.tabColors[this.currentTab]);
-    }
-
-    drawChartOnCanvas(canvas, tab, color) {
-        const parent = canvas.parentElement;
-        const pw = parent.clientWidth;
-        const ph = parent.clientHeight;
-        const pad = tab === 'network' ? 0 : 16;
-        const w = pw - pad;
-        const h = ph - pad;
-        if (w <= 0 || h <= 0) return;
-
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, w, h);
-
-        let data, yMin, yMax;
-        switch (tab) {
-            case 'cpu': data = this.cpuHistory; yMin = 0; yMax = 100; break;
-            case 'memory': data = this.memHistory; yMin = 0; yMax = 100; break;
-            case 'disk': data = this.diskHistory; yMin = 0; yMax = 100; break;
-            case 'network': data = this.netUpHistory; break;
-        }
-        if (!data || data.length < 2) return;
-
-        if (yMin === undefined) {
-            const mx = Math.max(...data, 1);
-            yMin = 0; yMax = mx * 1.3;
-        }
-
-        const range = yMax - yMin || 1;
-        const len = data.length;
-        const xStep = w / (len - 1);
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = 1;
-        for (let i = 1; i <= 4; i++) {
-            const y = (h / 4) * i;
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-        }
-
-        ctx.beginPath(); ctx.moveTo(0, h);
-        for (let i = 0; i < len; i++) {
-            ctx.lineTo(i * xStep, h - ((data[i] - yMin) / range) * h);
-        }
-        ctx.lineTo(w, h); ctx.closePath();
-        ctx.fillStyle = color + '20';
-        ctx.fill();
-
-        ctx.beginPath();
-        for (let i = 0; i < len; i++) {
-            const x = i * xStep;
-            const y = h - ((data[i] - yMin) / range) * h;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        const val = data[len - 1];
-        const display = tab === 'network' ? this.formatSpeed(val) : val.toFixed(1) + '%';
-        ctx.fillStyle = color;
-        ctx.font = 'bold 22px monospace';
-        ctx.textAlign = 'right';
-        ctx.fillText(display, w - 4, 22);
     }
 
     /* ---- floating window content ---- */
@@ -477,6 +300,69 @@ class Monitor {
             }
         }
         fw.statsEl.innerHTML = html;
+    }
+
+    /* ---- chart drawing ---- */
+    drawChartOnCanvas(canvas, tab, color) {
+        const parent = canvas.parentElement;
+        const pw = parent.clientWidth;
+        const ph = parent.clientHeight;
+        if (pw <= 0 || ph <= 0) return;
+
+        canvas.width = pw;
+        canvas.height = ph;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, pw, ph);
+
+        let data, yMin, yMax;
+        switch (tab) {
+            case 'cpu': data = this.cpuHistory; yMin = 0; yMax = 100; break;
+            case 'memory': data = this.memHistory; yMin = 0; yMax = 100; break;
+            case 'disk': data = this.diskHistory; yMin = 0; yMax = 100; break;
+            case 'network': data = this.netUpHistory; break;
+        }
+        if (!data || data.length < 2) return;
+
+        if (yMin === undefined) {
+            const mx = Math.max(...data, 1);
+            yMin = 0; yMax = mx * 1.3;
+        }
+
+        const range = yMax - yMin || 1;
+        const len = data.length;
+        const xStep = pw / (len - 1);
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        for (let i = 1; i <= 4; i++) {
+            const y = (ph / 4) * i;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(pw, y); ctx.stroke();
+        }
+
+        ctx.beginPath(); ctx.moveTo(0, ph);
+        for (let i = 0; i < len; i++) {
+            ctx.lineTo(i * xStep, ph - ((data[i] - yMin) / range) * ph);
+        }
+        ctx.lineTo(pw, ph); ctx.closePath();
+        ctx.fillStyle = color + '20';
+        ctx.fill();
+
+        ctx.beginPath();
+        for (let i = 0; i < len; i++) {
+            const x = i * xStep;
+            const y = ph - ((data[i] - yMin) / range) * ph;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        const val = data[len - 1];
+        const display = tab === 'network' ? this.formatSpeed(val) : val.toFixed(1) + '%';
+        ctx.fillStyle = color;
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(display, pw - 4, 20);
     }
 
     /* ---- utilities ---- */
